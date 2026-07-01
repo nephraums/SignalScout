@@ -1,0 +1,18 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install --no-audit --no-fund",
+  "devCommand": "npm run dev",
+  "regions": ["sin1"],
+  "functions": {
+    "app/api/classify/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/scan-news/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/scan-market/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

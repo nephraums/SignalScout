@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.production
+.env.production.local
+node_modules
+.next
+.next-build
+.next-final
+.vercel
+.npm-cache
+tsconfig.tsbuildinfo
