@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { BarChart3, Building2, Crosshair, Plus, Search, Settings, ShieldCheck } from "lucide-react";
 import { GovernanceNote } from "@/components/governance-note";
 import { UserSwitcher } from "@/components/user-switcher";
+import { hydrateSharedStorage } from "@/lib/storage";
+import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/", label: "Signals", icon: BarChart3 },
@@ -17,6 +19,11 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    hydrateSharedStorage().finally(() => setReady(true));
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -57,7 +64,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-5 py-6">{children}</main>
+      <main className="mx-auto max-w-7xl px-5 py-6">
+        {ready ? children : <div className="rounded-md border border-line bg-white p-5 text-sm text-steel shadow-panel">Loading shared workspace...</div>}
+      </main>
       <GovernanceNote />
     </div>
   );

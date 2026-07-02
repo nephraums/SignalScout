@@ -2,6 +2,7 @@
 
 import { companies as seedCompanies, companyNotes, seedSignals } from "@/lib/mock-data";
 import { boardUseCases, countries, defaultRelevanceTerms, industries, intentSources, seedProfiles } from "@/lib/constants";
+import { supabase } from "@/lib/supabase";
 import type { AppSettings, Company, NewsArticle, Signal, SignalStatus, TargetAccount } from "@/lib/types";
 import type { ActivityEvent, CompanyWatcher, Note, Profile } from "@/lib/types";
 
@@ -16,6 +17,18 @@ const ACTIVITY_KEY = "signalscout.activity";
 const WATCHERS_KEY = "signalscout.watchers";
 const DATA_VERSION_KEY = "signalscout.dataVersion";
 const CURRENT_DATA_VERSION = "global-team-workflow-v4";
+const SHARED_STATE_KEYS = [
+  SIGNAL_KEY,
+  STATUS_KEY,
+  NOTES_KEY,
+  SETTINGS_KEY,
+  NEWS_KEY,
+  NOTES_STORE_KEY,
+  ACTIVITY_KEY,
+  WATCHERS_KEY
+];
+const sharedStateKeySet = new Set(SHARED_STATE_KEYS);
+let hydratePromise: Promise<void> | null = null;
 
 export const defaultTargetAccounts: TargetAccount[] = seedCompanies.map((company) => ({
   id: `acct-${company.id}`,
@@ -67,6 +80,74 @@ function writeJson<T>(key: string, value: T) {
     return;
   }
   window.localStorage.setItem(key, JSON.stringify(value));
+  syncSharedState(key, value);
+}
+
+function writeLocalJson<T>(key: string, value: T) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function syncSharedState<T>(key: string, value: T) {
+  if (!supabase || !sharedStateKeySet.has(key)) {
+    return;
+  }
+
+  void supabase
+    .from("app_state")
+    .upsert({
+      key,
+      value,
+      updated_at: new Date().toISOString()
+    })
+    .then(({ error }) => {
+      if (error) {
+        console.warn("SignalScout shared state sync failed", error.message);
+      }
+    });
+}
+
+export async function hydrateSharedStorage() {
+  if (typeof window === "undefined" || !supabase) {
+    ensureCurrentDataVersion();
+    return;
+  }
+
+  hydratePromise ??= (async () => {
+    ensureCurrentDataVersion();
+
+    const { data, error } = await supabase.from("app_state").select("key,value").in("key", SHARED_STATE_KEYS);
+
+    if (error) {
+      console.warn("SignalScout shared state load failed", error.message);
+      return;
+    }
+
+    const remoteKeys = new Set<string>();
+    data?.forEach((row) => {
+      remoteKeys.add(row.key);
+      writeLocalJson(row.key, row.value);
+    });
+
+    SHARED_STATE_KEYS.forEach((key) => {
+      if (remoteKeys.has(key)) {
+        return;
+      }
+
+      const raw = window.localStorage.getItem(key);
+      if (raw) {
+        try {
+          syncSharedState(key, JSON.parse(raw));
+        } catch {
+          // Leave malformed local values alone; normal reads will fall back safely.
+        }
+      }
+    });
+  })();
+
+  await hydratePromise;
 }
 
 function removePlaceholderSignals(signals: Signal[]) {
@@ -80,17 +161,21 @@ function removePlaceholderSignals(signals: Signal[]) {
 }
 
 function ensureCurrentDataVersion() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
   const dataVersion = readJson<string | null>(DATA_VERSION_KEY, null);
   if (dataVersion !== CURRENT_DATA_VERSION) {
-    writeJson(SIGNAL_KEY, []);
-    writeJson(STATUS_KEY, {});
-    writeJson(NOTES_KEY, {});
-    writeJson(NEWS_KEY, []);
-    writeJson(NOTES_STORE_KEY, []);
-    writeJson(ACTIVITY_KEY, []);
-    writeJson(WATCHERS_KEY, []);
-    writeJson(CURRENT_USER_KEY, seedProfiles[0].id);
-    writeJson(SETTINGS_KEY, defaultSettings);
+    if (!window.localStorage.getItem(SIGNAL_KEY)) writeJson(SIGNAL_KEY, []);
+    if (!window.localStorage.getItem(STATUS_KEY)) writeJson(STATUS_KEY, {});
+    if (!window.localStorage.getItem(NOTES_KEY)) writeJson(NOTES_KEY, {});
+    if (!window.localStorage.getItem(NEWS_KEY)) writeJson(NEWS_KEY, []);
+    if (!window.localStorage.getItem(NOTES_STORE_KEY)) writeJson(NOTES_STORE_KEY, []);
+    if (!window.localStorage.getItem(ACTIVITY_KEY)) writeJson(ACTIVITY_KEY, []);
+    if (!window.localStorage.getItem(WATCHERS_KEY)) writeJson(WATCHERS_KEY, []);
+    if (!window.localStorage.getItem(CURRENT_USER_KEY)) writeJson(CURRENT_USER_KEY, seedProfiles[0].id);
+    if (!window.localStorage.getItem(SETTINGS_KEY)) writeJson(SETTINGS_KEY, defaultSettings);
     writeJson(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
   }
 }

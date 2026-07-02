@@ -8,6 +8,7 @@ export const countries = [
   "Germany",
   "France",
   "United States",
+  "Saudi Arabia",
   "Malaysia",
   "Indonesia",
   "Thailand",
