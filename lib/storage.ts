@@ -109,6 +109,52 @@ function syncSharedState<T>(key: string, value: T) {
     });
 }
 
+function mergeById<T extends { id: string }>(remote: T[], local: T[]) {
+  const byId = new Map<string, T>();
+  [...remote, ...local].forEach((item) => byId.set(item.id, item));
+  return Array.from(byId.values());
+}
+
+function mergeByName<T extends { name: string }>(remote: T[], local: T[]) {
+  const byName = new Map<string, T>();
+  [...remote, ...local].forEach((item) => byName.set(item.name, item));
+  return Array.from(byName.values());
+}
+
+function mergeSharedValue(key: string, remoteValue: unknown, localValue: unknown) {
+  if (!localValue) {
+    return remoteValue;
+  }
+
+  if (key === SETTINGS_KEY) {
+    const remote = remoteValue as AppSettings;
+    const local = localValue as AppSettings;
+    return {
+      ...remote,
+      ...local,
+      targetCountries: Array.from(new Set([...(remote.targetCountries ?? []), ...(local.targetCountries ?? [])])).sort(),
+      industryPreferences: mergeByName(remote.industryPreferences ?? [], local.industryPreferences ?? []),
+      boardUseCases: Array.from(new Set([...(remote.boardUseCases ?? []), ...(local.boardUseCases ?? [])])),
+      intentSources: Array.from(new Set([...(remote.intentSources ?? []), ...(local.intentSources ?? [])])),
+      targetAccounts: mergeById(remote.targetAccounts ?? [], local.targetAccounts ?? []),
+      relevanceTerms: Array.from(new Set([...(remote.relevanceTerms ?? []), ...(local.relevanceTerms ?? [])]))
+    };
+  }
+
+  if ([SIGNAL_KEY, NEWS_KEY, NOTES_STORE_KEY, ACTIVITY_KEY, WATCHERS_KEY].includes(key)) {
+    return mergeById((remoteValue as { id: string }[]) ?? [], (localValue as { id: string }[]) ?? []);
+  }
+
+  if ([STATUS_KEY, NOTES_KEY].includes(key)) {
+    return {
+      ...((remoteValue as Record<string, unknown>) ?? {}),
+      ...((localValue as Record<string, unknown>) ?? {})
+    };
+  }
+
+  return remoteValue;
+}
+
 export async function hydrateSharedStorage() {
   if (typeof window === "undefined" || !supabase) {
     ensureCurrentDataVersion();
@@ -128,7 +174,10 @@ export async function hydrateSharedStorage() {
     const remoteKeys = new Set<string>();
     data?.forEach((row) => {
       remoteKeys.add(row.key);
-      writeLocalJson(row.key, row.value);
+      const localValue = readJson<unknown | null>(row.key, null);
+      const mergedValue = mergeSharedValue(row.key, row.value, localValue);
+      writeLocalJson(row.key, mergedValue);
+      syncSharedState(row.key, mergedValue);
     });
 
     SHARED_STATE_KEYS.forEach((key) => {
