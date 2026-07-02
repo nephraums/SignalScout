@@ -145,6 +145,8 @@ export type UserRole = "Admin" | "Sales Rep" | "BDR" | "Viewer";
 export type Profile = {
   id: string;
   full_name: string;
+  username?: string;
+  password?: string;
   email: string;
   role: UserRole;
   team?: string | null;

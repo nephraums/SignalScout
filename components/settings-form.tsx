@@ -1,8 +1,8 @@
 "use client";
 
 import { countries, industries } from "@/lib/constants";
-import { getSettings, saveSettings } from "@/lib/storage";
-import type { AppSettings, IndustryPreference, TargetAccount } from "@/lib/types";
+import { getLoggedInUser, getProfiles, getSettings, saveProfiles, saveSettings } from "@/lib/storage";
+import type { AppSettings, IndustryPreference, Profile, TargetAccount, UserRole } from "@/lib/types";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -23,10 +23,14 @@ export function SettingsForm() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [saved, setSaved] = useState(false);
   const [newCountry, setNewCountry] = useState("");
-  const [activeTab, setActiveTab] = useState<"markets" | "accounts" | "relevance" | "labels">("markets");
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [activeTab, setActiveTab] = useState<"markets" | "accounts" | "relevance" | "labels" | "users">("markets");
+  const loggedInUser = getLoggedInUser();
+  const canManageUsers = loggedInUser?.id === "user-admin";
 
   useEffect(() => {
     setSettings(getSettings());
+    setProfiles(getProfiles());
   }, []);
 
   if (!settings) {
@@ -156,6 +160,48 @@ export function SettingsForm() {
     window.setTimeout(() => setSaved(false), 1600);
   }
 
+  function addUser() {
+    const now = new Date().toISOString();
+    const nextUser: Profile = {
+      id: `user-${Date.now()}`,
+      full_name: "New User",
+      username: "New User",
+      password: "New User",
+      email: "new.user@example.com",
+      role: "Viewer",
+      team: "Global",
+      created_at: now,
+      updated_at: now
+    };
+    const nextProfiles = [...profiles, nextUser];
+    setProfiles(nextProfiles);
+    saveProfiles(nextProfiles);
+  }
+
+  function updateUser(id: string, patch: Partial<Profile>) {
+    const nextProfiles = profiles.map((profile) =>
+      profile.id === id
+        ? {
+            ...profile,
+            ...patch,
+            username: patch.username ?? profile.username,
+            updated_at: new Date().toISOString()
+          }
+        : profile
+    );
+    setProfiles(nextProfiles);
+    saveProfiles(nextProfiles);
+  }
+
+  function removeUser(id: string) {
+    if (id === "user-admin") {
+      return;
+    }
+    const nextProfiles = profiles.filter((profile) => profile.id !== id);
+    setProfiles(nextProfiles);
+    saveProfiles(nextProfiles);
+  }
+
   const countryOptions = Array.from(new Set([...countries, ...settings.targetCountries])).sort();
 
   return (
@@ -165,7 +211,8 @@ export function SettingsForm() {
           ["markets", "Markets"],
           ["accounts", "Accounts"],
           ["relevance", "Relevance"],
-          ["labels", "Labels"]
+          ["labels", "Labels"],
+          ...(canManageUsers ? [["users", "Users"]] : [])
         ].map(([value, label]) => (
           <button
             key={value}
@@ -416,6 +463,79 @@ export function SettingsForm() {
         </div>
       </section>
       </>
+      ) : null}
+
+      {activeTab === "users" && canManageUsers ? (
+      <section className="rounded-md border border-line bg-white p-5 shadow-panel">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-ink">User management</h2>
+            <p className="mt-1 text-sm text-steel">Prototype access only. Passwords are simple shared-workspace values for now.</p>
+          </div>
+          <button
+            type="button"
+            onClick={addUser}
+            className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-semibold text-ink hover:border-board hover:text-board"
+          >
+            <Plus size={16} aria-hidden />
+            Add User
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {profiles.map((profile) => (
+            <div key={profile.id} className="grid gap-3 rounded-md border border-line p-3 lg:grid-cols-[1fr_1fr_1fr_150px_44px] lg:items-end">
+              <label className="space-y-1">
+                <span className="text-xs font-semibold uppercase text-steel">Name</span>
+                <input
+                  value={profile.full_name}
+                  onChange={(event) => updateUser(profile.id, { full_name: event.target.value, username: event.target.value })}
+                  className="focus-ring h-10 w-full rounded-md border border-line px-3 text-sm text-ink"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs font-semibold uppercase text-steel">Username</span>
+                <input
+                  value={profile.username ?? profile.full_name}
+                  onChange={(event) => updateUser(profile.id, { username: event.target.value })}
+                  className="focus-ring h-10 w-full rounded-md border border-line px-3 text-sm text-ink"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs font-semibold uppercase text-steel">Password</span>
+                <input
+                  value={profile.password ?? ""}
+                  onChange={(event) => updateUser(profile.id, { password: event.target.value })}
+                  className="focus-ring h-10 w-full rounded-md border border-line px-3 text-sm text-ink"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs font-semibold uppercase text-steel">Role</span>
+                <select
+                  value={profile.role}
+                  onChange={(event) => updateUser(profile.id, { role: event.target.value as UserRole })}
+                  className="focus-ring h-10 w-full rounded-md border border-line px-3 text-sm text-ink"
+                  disabled={profile.id === "user-admin"}
+                >
+                  <option>Admin</option>
+                  <option>Sales Rep</option>
+                  <option>BDR</option>
+                  <option>Viewer</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => removeUser(profile.id)}
+                disabled={profile.id === "user-admin"}
+                className="focus-ring grid h-10 w-10 place-items-center rounded-md border border-line bg-white text-steel hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+                title="Remove user"
+              >
+                <Trash2 size={16} aria-hidden />
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
       ) : null}
 
       <div className="sticky bottom-4 flex justify-end">

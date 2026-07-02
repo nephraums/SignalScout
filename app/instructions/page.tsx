@@ -39,6 +39,13 @@ export default function InstructionsPage() {
         </div>
       </section>
 
+      <section className="rounded-md border border-line bg-white p-5 shadow-panel">
+        <h2 className="text-lg font-semibold text-ink">Viewing examples</h2>
+        <p className="mt-2 max-w-4xl text-sm leading-6 text-steel">
+          After signing in, use the profile selector in the top navigation to switch between your own profile and Admin. The Admin profile contains examples across the menu items so you can see how Settings, scans, saved signals, and the dashboard are intended to work. When you sign in again later, SignalScout will default back to your own user.
+        </p>
+      </section>
+
       <section className="flex flex-wrap gap-2">
         <Link href="/settings" className="focus-ring inline-flex h-11 items-center gap-2 rounded-md bg-board px-4 text-sm font-semibold text-white hover:bg-board/90">
           Start with Settings

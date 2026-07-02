@@ -10,8 +10,10 @@ const SIGNAL_KEY = "signalscout.customSignals";
 const STATUS_KEY = "signalscout.statusOverrides";
 const NOTES_KEY = "signalscout.noteOverrides";
 const SETTINGS_KEY = "signalscout.settings";
+const USERS_KEY = "signalscout.users";
 const NEWS_KEY = "signalscout.newsArticles";
 const CURRENT_USER_KEY = "signalscout.currentUser";
+const SESSION_USER_KEY = "signalscout.sessionUser";
 const NOTES_STORE_KEY = "signalscout.notes";
 const ACTIVITY_KEY = "signalscout.activity";
 const WATCHERS_KEY = "signalscout.watchers";
@@ -22,6 +24,7 @@ const SHARED_STATE_KEYS = [
   STATUS_KEY,
   NOTES_KEY,
   SETTINGS_KEY,
+  USERS_KEY,
   NEWS_KEY,
   NOTES_STORE_KEY,
   ACTIVITY_KEY,
@@ -141,7 +144,7 @@ function mergeSharedValue(key: string, remoteValue: unknown, localValue: unknown
     };
   }
 
-  if ([SIGNAL_KEY, NEWS_KEY, NOTES_STORE_KEY, ACTIVITY_KEY, WATCHERS_KEY].includes(key)) {
+  if ([SIGNAL_KEY, USERS_KEY, NEWS_KEY, NOTES_STORE_KEY, ACTIVITY_KEY, WATCHERS_KEY].includes(key)) {
     return mergeById((remoteValue as { id: string }[]) ?? [], (localValue as { id: string }[]) ?? []);
   }
 
@@ -223,6 +226,7 @@ function ensureCurrentDataVersion() {
     if (!window.localStorage.getItem(NOTES_STORE_KEY)) writeJson(NOTES_STORE_KEY, []);
     if (!window.localStorage.getItem(ACTIVITY_KEY)) writeJson(ACTIVITY_KEY, []);
     if (!window.localStorage.getItem(WATCHERS_KEY)) writeJson(WATCHERS_KEY, []);
+    if (!window.localStorage.getItem(USERS_KEY)) writeJson(USERS_KEY, seedProfiles);
     if (!window.localStorage.getItem(CURRENT_USER_KEY)) writeJson(CURRENT_USER_KEY, seedProfiles[0].id);
     if (!window.localStorage.getItem(SETTINGS_KEY)) writeJson(SETTINGS_KEY, defaultSettings);
     writeJson(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
@@ -399,24 +403,72 @@ export function clearNewsArticles() {
 
 export function getProfiles(): Profile[] {
   ensureCurrentDataVersion();
-  return seedProfiles;
+  const storedUsers = readJson<Profile[]>(USERS_KEY, seedProfiles);
+  const byId = new Map<string, Profile>();
+
+  [...seedProfiles, ...storedUsers].forEach((profile) => {
+    byId.set(profile.id, {
+      ...profile,
+      full_name: profile.id === "user-admin" ? "Admin" : profile.full_name,
+      username: profile.username ?? profile.full_name
+    });
+  });
+
+  return Array.from(byId.values());
+}
+
+export function saveProfiles(profiles: Profile[]) {
+  writeJson(USERS_KEY, profiles);
 }
 
 export function getCurrentUser(): Profile {
   ensureCurrentDataVersion();
   const userId = readJson<string>(CURRENT_USER_KEY, seedProfiles[0].id);
-  return seedProfiles.find((profile) => profile.id === userId) ?? seedProfiles[0];
+  return getProfiles().find((profile) => profile.id === userId) ?? getProfiles()[0];
 }
 
 export function setCurrentUser(userId: string) {
   writeJson(CURRENT_USER_KEY, userId);
 }
 
+export function getLoggedInUser(): Profile | null {
+  ensureCurrentDataVersion();
+  const userId = readJson<string | null>(SESSION_USER_KEY, null);
+  return userId ? getProfiles().find((profile) => profile.id === userId) ?? null : null;
+}
+
+export function login(username: string, password: string) {
+  const normalizedUsername = username.trim().toLowerCase();
+  const user = getProfiles().find(
+    (profile) => (profile.username ?? profile.full_name).toLowerCase() === normalizedUsername && profile.password === password
+  );
+
+  if (!user) {
+    return null;
+  }
+
+  writeJson(SESSION_USER_KEY, user.id);
+  writeJson(CURRENT_USER_KEY, user.id);
+  return user;
+}
+
+export function logout() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.removeItem(SESSION_USER_KEY);
+  window.localStorage.removeItem(CURRENT_USER_KEY);
+}
+
+export function isLoggedInAdmin() {
+  return getLoggedInUser()?.id === "user-admin";
+}
+
 export function getProfileName(userId?: string | null) {
   if (!userId) {
     return "Unassigned";
   }
-  return seedProfiles.find((profile) => profile.id === userId)?.full_name ?? "Unknown user";
+  return getProfiles().find((profile) => profile.id === userId)?.full_name ?? "Unknown user";
 }
 
 export function getNotes(filters: { companyId?: string; signalId?: string } = {}) {

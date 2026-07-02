@@ -45,7 +45,9 @@ const seedTimestamp = "2026-07-01T09:00:00.000Z";
 export const seedProfiles: Profile[] = [
   {
     id: "user-admin",
-    full_name: "Prototype Admin",
+    full_name: "Admin",
+    username: "Admin",
+    password: "Admin",
     email: "admin@example.com",
     role: "Admin",
     team: "Global",
@@ -53,18 +55,55 @@ export const seedProfiles: Profile[] = [
     updated_at: seedTimestamp
   },
   {
-    id: "user-bdr",
-    full_name: "BDR User",
-    email: "bdr@example.com",
+    id: "user-peter",
+    full_name: "Peter",
+    username: "Peter",
+    password: "Peter",
+    email: "peter@example.com",
     role: "BDR",
     team: "BDR",
     created_at: seedTimestamp,
     updated_at: seedTimestamp
   },
   {
-    id: "user-sales",
-    full_name: "Sales Rep User",
-    email: "sales@example.com",
+    id: "user-jerome",
+    full_name: "Jerome",
+    username: "Jerome",
+    password: "Jerome",
+    email: "jerome@example.com",
+    role: "Sales Rep",
+    team: "Sales",
+    created_at: seedTimestamp,
+    updated_at: seedTimestamp
+  },
+  {
+    id: "user-sanford",
+    full_name: "Sanford",
+    username: "Sanford",
+    password: "Sanford",
+    email: "sanford@example.com",
+    role: "Sales Rep",
+    team: "Sales",
+    created_at: seedTimestamp,
+    updated_at: seedTimestamp
+  },
+  {
+    id: "user-jezreel",
+    full_name: "Jezreel",
+    username: "Jezreel",
+    password: "Jezreel",
+    email: "jezreel@example.com",
+    role: "BDR",
+    team: "BDR",
+    created_at: seedTimestamp,
+    updated_at: seedTimestamp
+  },
+  {
+    id: "user-kristine",
+    full_name: "Kristine",
+    username: "Kristine",
+    password: "Kristine",
+    email: "kristine@example.com",
     role: "Sales Rep",
     team: "Sales",
     created_at: seedTimestamp,
