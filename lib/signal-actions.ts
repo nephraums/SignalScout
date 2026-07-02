@@ -1,10 +1,17 @@
 "use client";
 
-import { getCurrentUser, saveSignal } from "@/lib/storage";
+import { getCurrentUser, getSettings, saveSignal } from "@/lib/storage";
 import type { ClassificationResult, IntentSource, NewsArticle, Signal, TargetAccount } from "@/lib/types";
 
 export function slug(input: string) {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function findMatchedTerms(text: string) {
+  const lower = text.toLowerCase();
+  return getSettings().relevanceTerms
+    .filter((term) => lower.includes(term.toLowerCase()))
+    .slice(0, 20);
 }
 
 export async function classifyAndSaveSignal({
@@ -45,6 +52,33 @@ export async function classifyAndSaveSignal({
   const timestamp = new Date().toISOString();
   const currentUser = getCurrentUser();
   const stableCompanyId = companyId ?? `co-${slug(companyName)}-${Date.now()}`;
+  const matchedTerms = findMatchedTerms(
+    [
+      sourceUrl,
+      companyName,
+      country,
+      industry,
+      notes,
+      payload.result.source_title,
+      payload.result.summary,
+      payload.result.why_it_matters,
+      payload.result.possible_business_pain,
+      payload.result.board_use_case,
+      payload.result.recommended_play_name
+    ]
+      .filter(Boolean)
+      .join("\n")
+  );
+  const associatedLabels = Array.from(
+    new Set([
+      payload.result.signal_type,
+      payload.result.board_use_case,
+      payload.result.recommended_play_name,
+      intentSource,
+      industry,
+      country
+    ])
+  );
   const signal: Signal = {
     id: `sig-${slug(companyName)}-${Date.now()}`,
     company_id: stableCompanyId,
@@ -86,6 +120,8 @@ export async function classifyAndSaveSignal({
     manually_added_to_crm: false,
     last_action_at: timestamp,
     user_notes: notes,
+    associated_labels: associatedLabels,
+    matched_terms: matchedTerms,
     created_at: timestamp,
     updated_at: timestamp
   };

@@ -112,9 +112,9 @@ export default function TargetAccountsPage() {
     <div className="space-y-6">
       <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal text-ink">Account watchlist</h1>
+          <h1 className="text-3xl font-semibold tracking-normal text-ink">Scan my targets watchlist</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-steel">
-            Track named accounts, scan public news, and see which accounts are already being worked.
+            Run frequent public scans for named accounts, review matched articles, and add the signals worth passing to BDRs.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -130,7 +130,7 @@ export default function TargetAccountsPage() {
       </section>
 
       <section className="rounded-md border border-line bg-white p-4 text-sm leading-6 text-steel shadow-panel">
-        The scan uses public news RSS for the configured accounts and stores recent article matches in this browser. Scheduling this as a continuous job is the next deployment step.
+        The scan uses public news RSS for the configured accounts and stores recent article matches in the shared workspace.
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">

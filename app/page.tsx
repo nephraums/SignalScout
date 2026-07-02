@@ -57,7 +57,7 @@ export default function DashboardPage() {
             <Radar size={15} aria-hidden />
             Global public signals
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-normal text-ink">Signal queue</h1>
+          <h1 className="mt-3 text-3xl font-semibold tracking-normal text-ink">Dashboard summary</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-steel">
             Public-source signals mapped to generic sales plays for team review.
           </p>

@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Building2, Crosshair, Plus, Search, Settings, ShieldCheck } from "lucide-react";
+import { BarChart3, BookOpen, Building2, Crosshair, Plus, Search, Settings, ShieldCheck } from "lucide-react";
 import { GovernanceNote } from "@/components/governance-note";
 import { UserSwitcher } from "@/components/user-switcher";
 import { hydrateSharedStorage } from "@/lib/storage";
 import { useEffect, useState } from "react";
 
 const navItems = [
-  { href: "/", label: "Signals", icon: BarChart3 },
-  { href: "/target-accounts", label: "Watchlist", icon: Crosshair },
+  { href: "/instructions", label: "Instructions", icon: BookOpen },
+  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/target-accounts", label: "Scan My Targets Watchlist", icon: Crosshair },
   { href: "/discover", label: "Discover", icon: Search },
-  { href: "/companies", label: "Directory", icon: Building2 },
-  { href: "/add", label: "Add Signal", icon: Plus },
-  { href: "/settings", label: "Settings", icon: Settings }
+  { href: "/companies", label: "My Signals", icon: Building2 },
+  { href: "/add", label: "Manually Add Signal", icon: Plus },
+  { href: "/", label: "Dashboard Summary", icon: BarChart3 }
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

@@ -89,6 +89,8 @@ export type Signal = {
   manually_added_to_crm?: boolean;
   last_action_at?: string | null;
   user_notes?: string | null;
+  associated_labels?: string[];
+  matched_terms?: string[];
   created_at: string;
   updated_at: string;
 };

@@ -25,6 +25,22 @@ function DetailBlock({ title, children }: { title: string; children: React.React
   );
 }
 
+function PillList({ items, empty }: { items?: string[]; empty: string }) {
+  if (!items?.length) {
+    return <p className="text-steel">{empty}</p>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span key={item} className="rounded-md border border-line bg-mist px-2.5 py-1 text-sm font-medium text-ink">
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function SignalDetailPage() {
   const params = useParams<{ id: string }>();
   const [signal, setSignal] = useState<Signal | null | undefined>(undefined);
@@ -114,6 +130,12 @@ export default function SignalDetailPage() {
         <DetailBlock title="Why it matters">{signal.why_it_matters}</DetailBlock>
         <DetailBlock title="Possible business pain">{signal.possible_business_pain}</DetailBlock>
         <DetailBlock title="Suggested manual research">{signal.suggested_manual_research_steps}</DetailBlock>
+        <DetailBlock title="Associated labels">
+          <PillList items={signal.associated_labels} empty="No labels captured for this signal yet." />
+        </DetailBlock>
+        <DetailBlock title="Matched search words">
+          <PillList items={signal.matched_terms} empty="No configured relevance terms matched this signal." />
+        </DetailBlock>
       </section>
 
       <DetailBlock title="Copy for Internal GPT / Gong Flow">
